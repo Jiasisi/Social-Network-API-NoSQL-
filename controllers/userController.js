@@ -4,7 +4,7 @@ module.exports = {
   // get all users
   async getUsers(req, res) {
     try {
-      const users = await User.find();
+      const users = await User.find().sort({username: 1});
       res.json(users);
     } catch (err) {
       res.status(500).json(err);
@@ -14,14 +14,13 @@ module.exports = {
   // get a single user
   async getSingleUser(req, res) {
     try {
-      const user = await User.findOne({ _id: req.params.userId })
-        .select('-__v');
-
-      if (!user) {
+      const singleUser = await User.findOne({ _id: req.params.userId })
+    
+      if (!singleUser) {
         return res.status(404).json({ message: 'No user with that ID' });
       }
 
-      res.json(user);
+      res.json(singleUser);
     } catch (err) {
       res.status(500).json(err);
     } 
@@ -30,8 +29,22 @@ module.exports = {
   // create a new user
   async createUser(req, res) {
     try {
-      const user = await User.create(req.body);
-      res.json(user);
+      const userData = await User.create(req.body);
+      res.json(userData);
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  },
+
+  //update a user
+  async updateUser(req, res) {
+    try {
+      const updatedUser = await User.findOneAndUpdate({_id: req.params.id}, req.body, {new: true});
+      if (!updatedUser) {
+        res.json({message: 'No user with that ID'});
+
+      }
+      res.json(updatedUser);
     } catch (err) {
       res.status(500).json(err);
     }
@@ -40,19 +53,34 @@ module.exports = {
   // delete a user and associated thoughts
   async deleteUser(req, res) {
     try {
-      const user = await User.findOneAndDelete({ _id: req.params.userId });
-
-      if (!user) {
-        return res.status(404).json({ message: 'No user with that ID' });
-
-      } 
-
-      await Thought.deleteMany({ _id: { $in: user.thoughts }});
-      res.json({ message: 'User and associated thoughts deleted!' });
-
+      const deletedUser = await User.findOneAndDelete({ _id: req.params.userId });
+      res.json(deletedUser)
 
     } catch (err) {
       res.status(500).json(err);
     }
-  } 
+  },
+
+  // add a friend
+  async addFriend(req, res) {
+    try {
+      const newFriend = await User.findOneAndUpdate({_id: req.params.id}, {$push: {friends: req.params.friendId}});
+      res.status(200).json(newFriend);
+
+    } catch(err){
+      res.status(500).json(err);
+    }
+  },
+
+  // delete a friend
+  async deleteFriend(req, res) {
+    try {
+      const deletedFriend = await User.findOneAndUpdate({_id: req.params.id}, {$pull: {friends: req.params.friendId}});
+      res.json(deletedFriend);
+
+    } catch(err){
+      res.status(500).json(err);
+    }
+  }
+
 };
